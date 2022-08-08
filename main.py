@@ -31,25 +31,27 @@ def home():
                     }    
 
             }
+
   
 @app.post(path="/users/",
-          response_model=models.UserBase,
-          status_code=status.HTTP_201_CREATED,
-          summary= "Create a User",
-          tags=["Users"]
+        #response_model=models.UserBase,
+        status_code=status.HTTP_201_CREATED,
+        summary= "Create a User",
+        tags=["Users"]
         )
 def create_a_user(user_data: models.UserBase = Body(...)):
     
     row = user_data.dict()
     data = db.insertUser(row)
+    
     return data
 
 
 @app.get(path="/users/{user_id}",
-          response_model=models.User,
-          status_code=status.HTTP_202_ACCEPTED,
-          summary= "Show a User",
-          tags=["Users"]
+        #response_model=models.User,
+        status_code=status.HTTP_202_ACCEPTED,
+        summary= "Show a User",
+        tags=["Users"]
         )
 def read_a_user(user_id: int = Path(...,
                             gt=0,
@@ -68,56 +70,66 @@ def read_a_user(user_id: int = Path(...,
         data["email"]= row[4]
         data["country"]= row[5]
     else:
-        data["id"]= user_id
-        data["name"]= "None"
-        data["last_name"]= "None"
-        data["birth_date"]= "1950-01-01"
-        data["email"]= "None@None.none"
-        data["country"]= "None"
+        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
         response.status_code = status.HTTP_404_NOT_FOUND
+
     return data
 
 
 @app.put(path="/users/{user_id}/update",
-          response_model=models.User,
-          status_code=status.HTTP_202_ACCEPTED,
-          summary= "Update a User",
-          tags=["Users"]
+        #response_model=models.User,
+        status_code=status.HTTP_202_ACCEPTED,
+        summary= "Update a User",
+        tags=["Users"]
         )
 def update_a_user(user_id: int = Path(...,
                             gt=0,
                             title="User ID",
                             description="This is the user id. It's requered"
                             ),
-                  user_data: models.UserBase = Body(...)
+                  user_data: models.UserBase = Body(...),
+                  response : Response = status.HTTP_202_ACCEPTED
                 ):
-    row = user_data.dict()
 
-    row["id"] = user_id
-    data = db.updateUser(row)
+    row = db.readUser(user_id)
+    data={}
+    if row is not None:
+        row = user_data.dict()
+        row["id"] = user_id
+        data = db.updateUser(row)
+    else:
+        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
+        response.status_code = status.HTTP_404_NOT_FOUND
 
     return data
 
 
 @app.delete(path="/users/{user_id}/delete",
-          status_code=status.HTTP_202_ACCEPTED,
-          summary= "Delete a User",
-          tags=["Users"]
-@app.post(path="/users/",
-          response_model=models.UserBase,
-          status_code=status.HTTP_201_CREATED,
-          summary= "Create a User",
-          tags=["Users"]
-        )
-def create_a_user(user_data: models.UserBase = Body(...)):
-    
+        #response_model=models.UserBase,
+        status_code=status.HTTP_200_OK,
+        summary= "Delete a User",
+        tags=["Users"]
         )
 def delete_a_user(user_id: int = Path(...,
                             gt=0,
                             title="User ID",
                             description="This is the user id. It's requered"
-                            )
+                            ),
+                  response : Response = status.HTTP_200_OK
                 ):
-    row = db.deleteUser(user_id)
-    return row
-     
+
+    row = db.readUser(user_id)
+    data = {}
+    if row is not None:
+        data["id"]= row[0]
+        data["name"]= row[1]
+        data["last_name"]= row[2]
+        data["birth_date"]= row[3]
+        data["email"]= row[4]
+        data["country"]= row[5]
+        row = db.deleteUser(user_id)
+    else:
+        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
+        response.status_code = status.HTTP_404_NOT_FOUND
+    
+    return data
