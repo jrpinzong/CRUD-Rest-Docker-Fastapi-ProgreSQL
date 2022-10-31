@@ -1,18 +1,36 @@
 services:
 
   db:
-    image: postgres:13
+    image: postgres:13-alpine
     restart: always
     ports:
       - "5432:5432"
+    expose:
+      - 5432
     environment:
-      - POSTGRES_HOST=127.0.0.1
+      - POSTGRES_HOST=0.0.0.0
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=DataBase
+    
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=DataBase
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
     environment:
       PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
       PGADMIN_DEFAULT_PASSWORD: "admin"

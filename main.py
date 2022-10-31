@@ -1,12 +1,16 @@
+from time import sleep
+
 from fastapi import FastAPI
 from fastapi import status, Response
 from fastapi import Body, Path
 
+from db import Db
 import models
-import db
 
 
+sleep(10)
 app = FastAPI()
+db = Db()
 
 
 @app.get(path="/",
@@ -61,8 +65,12 @@ def read_a_user(user_id: int = Path(...,
                 ):
 
     row = db.readUser(user_id)
+    print(f">>>  {row}")
     data = {}
-    if row is not None:
+    if row is None:
+        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
+        response.status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(row, tuple):
         data["id"]= row[0]
         data["name"]= row[1]
         data["last_name"]= row[2]
@@ -70,8 +78,8 @@ def read_a_user(user_id: int = Path(...,
         data["email"]= row[4]
         data["country"]= row[5]
     else:
-        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
-        response.status_code = status.HTTP_404_NOT_FOUND
+        response.status_code = status.HTTP_417_EXPECTATION_FAILED
+        return row
 
     return data
 
@@ -93,13 +101,16 @@ def update_a_user(user_id: int = Path(...,
 
     row = db.readUser(user_id)
     data={}
-    if row is not None:
+    if row is None:       
+        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
+        response.status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(row, tuple):
         row = user_data.dict()
         row["id"] = user_id
         data = db.updateUser(row)
     else:
-        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
-        response.status_code = status.HTTP_404_NOT_FOUND
+        response.status_code = status.HTTP_417_EXPECTATION_FAILED
+        return row
 
     return data
 
@@ -120,7 +131,10 @@ def delete_a_user(user_id: int = Path(...,
 
     row = db.readUser(user_id)
     data = {}
-    if row is not None:
+    if row is None:       
+        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
+        response.status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(row, tuple):
         data["id"]= row[0]
         data["name"]= row[1]
         data["last_name"]= row[2]
@@ -129,7 +143,7 @@ def delete_a_user(user_id: int = Path(...,
         data["country"]= row[5]
         row = db.deleteUser(user_id)
     else:
-        data[f"{user_id}"]= "HTTP_404_NOT_FOUND"
-        response.status_code = status.HTTP_404_NOT_FOUND
+        response.status_code = status.HTTP_417_EXPECTATION_FAILED
+        return row
     
     return data
